@@ -21,12 +21,37 @@ namespace SQLBuilder
                 int rowCount = worksheet.Dimension.Rows;
                 int columnCount = worksheet.Dimension.Columns;
 
-                string[] insertStatements = new string[rowCount - 1];
+                int conceptNameColumnIndex = 0;
+
+                // Find the index of the "Concept Name" column
+                for (int column = 1; column <= columnCount; column++)
+                {
+                    var columnName = worksheet.Cells[1, column].Value;
+                    if (columnName != null && columnName.ToString() == "Concept Name")
+                    {
+                        conceptNameColumnIndex = column;
+                        break;
+                    }
+                }
+
+                if (conceptNameColumnIndex == 0)
+                {
+                    Console.WriteLine("Concept Name column not found.");
+                    return;
+                }
+
+                List<string> insertStatements = new List<string>();
 
                 for (int row = 2; row <= rowCount; row++)
                 {
+                    var conceptName = worksheet.Cells[row, conceptNameColumnIndex].Value;
+                    if (conceptName == null || string.IsNullOrWhiteSpace(conceptName.ToString()))
+                    {
+                        continue;
+                    }
+
                     string insertStatement = GenerateInsertStatement(tableName, worksheet, row, columnCount);
-                    insertStatements[row - 2] = insertStatement;
+                    insertStatements.Add(insertStatement);
                 }
 
                 // Create a StringBuilder to store the INSERT statements
@@ -57,6 +82,12 @@ namespace SQLBuilder
             {
                 var cellValue = worksheet.Cells[1, column].Value;
                 string columnName = cellValue != null ? cellValue.ToString() : string.Empty;
+
+                // If the column is not Concept Code or Concept Name, skip it
+                if (columnName != "Concept Code" && columnName != "Concept Name")
+                {
+                    continue;
+                }
 
                 cellValue = worksheet.Cells[row, column].Value;
                 string cellData = cellValue != null ? cellValue.ToString() : string.Empty;
